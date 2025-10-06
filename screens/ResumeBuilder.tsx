@@ -1,30 +1,95 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useResume } from '../hooks/useResume';
-import { AiPromptType } from '../types';
+import { AiPromptType, Skill } from '../types';
 import ResumePreview from '../components/ResumePreview';
 import AiAssistantModal from '../components/AiAssistantModal';
 import { SparklesIcon, PlusIcon, TrashIcon } from '../components/icons';
 import { isAiAvailable } from '../services/geminiService';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
+
 
 const ResumeBuilder: React.FC = () => {
-  const { 
-    resume, 
-    handlePersonalInfoChange,
-    handleSummaryChange,
-    handleExperienceChange,
-    handleExperienceDescriptionChange,
-    addExperienceDescriptionItem,
-    removeExperienceDescriptionItem,
-    updateSummary,
-    addExperienceDescriptionItemWithValue,
-    addSkills,
-    removeSkill
-  } = useResume();
-  
+  const { resumeId } = useParams<{ resumeId: string }>();
+  const navigate = useNavigate();
+  const { resumes, updateResume } = useResume();
+  const resume = resumes.find(r => r.id === resumeId);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalConfig, setModalConfig] = useState<{ type: AiPromptType; context?: Record<string, any> }>({ type: AiPromptType.SUMMARY });
 
+  const handleResumeChange = (updatedResume: Partial<typeof resume>) => {
+      if(resume) {
+          updateResume({ ...resume, ...updatedResume });
+      }
+  }
+  
+  // Handlers for updating resume state
+  const handlePersonalInfoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!resume) return;
+    const { name, value } = e.target;
+    const updated = { ...resume, personalInfo: { ...resume.personalInfo, [name]: value } };
+    updateResume(updated);
+  }, [resume, updateResume]);
+  
+  const handleSummaryChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      if (!resume) return;
+      updateResume({ ...resume, summary: e.target.value });
+  }, [resume, updateResume]);
+
+  const handleExperienceChange = useCallback((index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!resume) return;
+    const { name, value } = e.target;
+    const newExperience = [...resume.experience];
+    newExperience[index] = { ...newExperience[index], [name]: value };
+    updateResume({ ...resume, experience: newExperience });
+  }, [resume, updateResume]);
+  
+  const handleExperienceDescriptionChange = useCallback((expIndex: number, descIndex: number, value: string) => {
+    if (!resume) return;
+    const newExperience = [...resume.experience];
+    newExperience[expIndex].description[descIndex] = value;
+    updateResume({ ...resume, experience: newExperience });
+  }, [resume, updateResume]);
+
+  const addExperienceDescriptionItem = useCallback((expIndex: number) => {
+    if (!resume) return;
+    const newExperience = [...resume.experience];
+    newExperience[expIndex].description.push('');
+    updateResume({ ...resume, experience: newExperience });
+  }, [resume, updateResume]);
+  
+  const removeExperienceDescriptionItem = useCallback((expIndex: number, descIndex: number) => {
+    if (!resume) return;
+    const newExperience = [...resume.experience];
+    newExperience[expIndex].description.splice(descIndex, 1);
+    updateResume({ ...resume, experience: newExperience });
+  }, [resume, updateResume]);
+
+  const updateSummary = useCallback((summary: string) => {
+    if (!resume) return;
+    updateResume({ ...resume, summary });
+  }, [resume, updateResume]);
+
+  const addExperienceDescriptionItemWithValue = useCallback((expIndex: number, value: string) => {
+    if (!resume) return;
+    const newExperience = [...resume.experience];
+    newExperience[expIndex].description.push(value);
+    updateResume({ ...resume, experience: newExperience });
+  }, [resume, updateResume]);
+  
+  const addSkills = useCallback((skills: Skill[]) => {
+      if (!resume) return;
+      updateResume({ ...resume, skills: [...resume.skills, ...skills] });
+  }, [resume, updateResume]);
+
+  const removeSkill = useCallback((skillId: string) => {
+      if (!resume) return;
+      updateResume({ ...resume, skills: resume.skills.filter(s => s.id !== skillId) });
+  }, [resume, updateResume]);
+
+  // AI Modal Logic
   const openAiModal = (type: AiPromptType, context?: Record<string, any>) => {
     setModalConfig({ type, context });
     setIsModalOpen(true);
@@ -39,17 +104,26 @@ const ResumeBuilder: React.FC = () => {
           addExperienceDescriptionItemWithValue(expIndex, content);
       }
       if (modalConfig.type === AiPromptType.SKILLS && Array.isArray(content)) {
-          const newSkills = content.map(skillName => ({id: `skill-${Date.now()}-${Math.random()}`, name: skillName }));
+          const newSkills = content.map(skillName => ({id: uuidv4(), name: skillName }));
           addSkills(newSkills);
       }
   };
+  
+  if (!resume) {
+    return (
+        <div className="flex flex-col items-center justify-center h-screen">
+            <h2 className="text-2xl font-bold text-text-primary mb-4">Resume not found</h2>
+            <Link to="/" className="text-primary hover:underline">Return to Dashboard</Link>
+        </div>
+    )
+  }
 
   return (
     <>
       <header className="bg-primary shadow-md p-4 flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-white tracking-wider">
+          <Link to="/" className="text-3xl font-bold text-white tracking-wider">
               Career <span className="text-secondary">Pulse</span>
-          </h1>
+          </Link>
           <button className="bg-secondary text-white font-bold py-2 px-4 rounded-lg hover:bg-orange-600 transition-colors">
               Export PDF
           </button>
@@ -58,7 +132,16 @@ const ResumeBuilder: React.FC = () => {
       <main className="p-4 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Editor Column */}
         <div className="bg-white rounded-lg shadow-lg p-6 overflow-y-auto max-h-[calc(100vh-120px)]">
-            <h2 className="text-2xl font-bold text-primary mb-6">Edit Your Resume</h2>
+            <div className="mb-6">
+                <label className="text-sm font-semibold text-text-secondary">Resume Title</label>
+                <input 
+                    name="name" 
+                    value={resume.name} 
+                    onChange={e => handleResumeChange({ name: e.target.value })} 
+                    placeholder="e.g. Resume for Google" 
+                    className="w-full text-2xl font-bold text-primary p-2 border-b-2 focus:outline-none focus:border-primary"
+                />
+            </div>
             
             {/* Personal Info */}
             <div className="mb-6">

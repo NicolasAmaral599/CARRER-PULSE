@@ -1,8 +1,20 @@
-import React, { createContext, useState, useCallback, ReactNode } from 'react';
-import { Resume, Skill } from '../types';
 
-const initialResume: Resume = {
-  id: `resume-${Date.now()}`,
+import React, { createContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import { Resume } from '../types';
+import { v4 as uuidv4 } from 'uuid';
+
+const createNewResume = (): Resume => ({
+  id: uuidv4(),
+  name: 'Untitled Resume',
+  personalInfo: { name: '', title: '', email: '', phone: '', location: '', linkedin: '', portfolio: '' },
+  summary: '',
+  experience: [],
+  education: [],
+  skills: [],
+});
+
+const createInitialResume = (): Resume => ({
+  id: uuidv4(),
   name: 'My First Resume',
   personalInfo: {
     name: 'Alex Doe',
@@ -16,7 +28,7 @@ const initialResume: Resume = {
   summary: 'A vibrant and passionate software engineer with 5 years of experience in developing user-centric web applications. Expert in React, TypeScript, and Node.js, with a strong focus on performance and creating seamless user experiences. Eager to bring technical skills and creative energy to a dynamic team.',
   experience: [
     {
-      id: `exp-${Date.now()}`,
+      id: uuidv4(),
       jobTitle: 'Frontend Developer',
       company: 'WebCreators',
       startDate: 'Jun 2021',
@@ -30,117 +42,73 @@ const initialResume: Resume = {
   ],
   education: [
     {
-        id: `edu-${Date.now()}`,
-        institution: 'University of Technology',
-        degree: 'B.S. in Computer Science',
-        startDate: 'Sep 2017',
-        endDate: 'May 2021'
-    }
+      id: uuidv4(),
+      institution: 'University of Technology',
+      degree: 'B.S. in Computer Science',
+      startDate: 'Sep 2017',
+      endDate: 'May 2021',
+    },
   ],
   skills: [
-      { id: `skill-${Date.now()}-1`, name: 'React.js' },
-      { id: `skill-${Date.now()}-2`, name: 'TypeScript' },
-      { id: `skill-${Date.now()}-3`, name: 'Node.js' },
-      { id: `skill-${Date.now()}-4`, name: 'Tailwind CSS' },
-      { id: `skill-${Date.now()}-5`, name: 'Agile Methodologies' }
+    { id: uuidv4(), name: 'React.js' },
+    { id: uuidv4(), name: 'TypeScript' },
+    { id: uuidv4(), name: 'Node.js' },
+    { id: uuidv4(), name: 'Tailwind CSS' },
+    { id: uuidv4(), name: 'Agile Methodologies' },
   ],
-};
-
+});
 
 interface ResumeContextType {
-  resume: Resume;
-  handlePersonalInfoChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleSummaryChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  handleExperienceChange: (index: number, e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleExperienceDescriptionChange: (expIndex: number, descIndex: number, value: string) => void;
-  addExperienceDescriptionItem: (expIndex: number) => void;
-  removeExperienceDescriptionItem: (expIndex: number, descIndex: number) => void;
-  updateSummary: (summary: string) => void;
-  addExperienceDescriptionItemWithValue: (expIndex: number, value: string) => void;
-  addSkills: (skills: Skill[]) => void;
-  removeSkill: (skillId: string) => void;
+  resumes: Resume[];
+  addResume: () => string;
+  updateResume: (updatedResume: Resume) => void;
+  deleteResume: (id: string) => void;
 }
 
 export const ResumeContext = createContext<ResumeContextType | undefined>(undefined);
 
+const RESUMES_STORAGE_KEY = 'career-pulse-resumes';
+
 export const ResumeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [resume, setResume] = useState<Resume>(initialResume);
+  const [resumes, setResumes] = useState<Resume[]>(() => {
+    try {
+      const storedResumes = localStorage.getItem(RESUMES_STORAGE_KEY);
+      if (storedResumes) {
+        return JSON.parse(storedResumes);
+      }
+    } catch (error) {
+      console.error("Failed to parse resumes from localStorage", error);
+    }
+    return [createInitialResume()];
+  });
 
-  const handlePersonalInfoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setResume(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, [name]: value } }));
+  useEffect(() => {
+    try {
+      localStorage.setItem(RESUMES_STORAGE_KEY, JSON.stringify(resumes));
+    } catch (error) {
+      console.error("Failed to save resumes to localStorage", error);
+    }
+  }, [resumes]);
+
+  const addResume = useCallback((): string => {
+    const newResume = createNewResume();
+    setResumes(prev => [...prev, newResume]);
+    return newResume.id;
+  }, []);
+
+  const updateResume = useCallback((updatedResume: Resume) => {
+    setResumes(prev => prev.map(r => r.id === updatedResume.id ? updatedResume : r));
   }, []);
   
-  const handleSummaryChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setResume(prev => ({ ...prev, summary: e.target.value }));
+  const deleteResume = useCallback((id: string) => {
+    setResumes(prev => prev.filter(r => r.id !== id));
   }, []);
-
-  const handleExperienceChange = useCallback((index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setResume(prev => {
-        const newExperience = [...prev.experience];
-        newExperience[index] = { ...newExperience[index], [name]: value };
-        return { ...prev, experience: newExperience };
-    });
-  }, []);
-  
-  const handleExperienceDescriptionChange = useCallback((expIndex: number, descIndex: number, value: string) => {
-    setResume(prev => {
-        const newExperience = [...prev.experience];
-        newExperience[expIndex].description[descIndex] = value;
-        return { ...prev, experience: newExperience };
-    });
-  }, []);
-
-  const addExperienceDescriptionItem = useCallback((expIndex: number) => {
-    setResume(prev => {
-        const newExperience = [...prev.experience];
-        newExperience[expIndex].description.push('');
-        return { ...prev, experience: newExperience };
-    });
-  }, []);
-  
-  const removeExperienceDescriptionItem = useCallback((expIndex: number, descIndex: number) => {
-    setResume(prev => {
-        const newExperience = [...prev.experience];
-        newExperience[expIndex].description.splice(descIndex, 1);
-        return { ...prev, experience: newExperience };
-    });
-  }, []);
-
-  const updateSummary = useCallback((summary: string) => {
-    setResume(prev => ({ ...prev, summary }));
-  }, []);
-
-  const addExperienceDescriptionItemWithValue = useCallback((expIndex: number, value: string) => {
-    setResume(prev => {
-        const newExperience = [...prev.experience];
-        newExperience[expIndex].description.push(value);
-        return { ...prev, experience: newExperience };
-    });
-  }, []);
-  
-  const addSkills = useCallback((skills: Skill[]) => {
-      setResume(prev => ({ ...prev, skills: [...prev.skills, ...skills] }));
-  }, []);
-
-  const removeSkill = useCallback((skillId: string) => {
-      setResume(prev => ({ ...prev, skills: prev.skills.filter(s => s.id !== skillId) }));
-  }, []);
-
 
   const value = {
-    resume,
-    handlePersonalInfoChange,
-    handleSummaryChange,
-    handleExperienceChange,
-    handleExperienceDescriptionChange,
-    addExperienceDescriptionItem,
-    removeExperienceDescriptionItem,
-    updateSummary,
-    addExperienceDescriptionItemWithValue,
-    addSkills,
-    removeSkill
+    resumes,
+    addResume,
+    updateResume,
+    deleteResume,
   };
 
   return <ResumeContext.Provider value={value}>{children}</ResumeContext.Provider>;
