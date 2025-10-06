@@ -4,14 +4,21 @@ import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 // Assume API_KEY is set in the environment
 const API_KEY = process.env.API_KEY;
 
-if (!API_KEY) {
+let ai: GoogleGenAI | null = null;
+
+if (API_KEY) {
+  try {
+    ai = new GoogleGenAI({ apiKey: API_KEY });
+  } catch (error) {
+    console.error("Failed to initialize GoogleGenAI:", error);
+  }
+} else {
   console.warn("API_KEY is not set. AI features will not work.");
 }
 
-const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 export const generateSummary = async (input: string): Promise<string> => {
-  if (!API_KEY) return "API Key not configured. Please set it up to use AI features.";
+  if (!ai) return "API Key not configured. Please set it up to use AI features.";
   try {
     const prompt = `P: O cliente do Career Pulse é um ${input}. Crie uma seção "Sobre Mim" para o currículo. Vamos pensar passo a passo, incorporando a energia do Career Pulse.
 
@@ -41,7 +48,7 @@ IA (Resposta Final):`;
 };
 
 export const generateExperienceBullet = async (responsibility: string, jobTitle: string): Promise<string> => {
-   if (!API_KEY) return "API Key not configured. Please set it up to use AI features.";
+   if (!ai) return "API Key not configured. Please set it up to use AI features.";
   try {
     const prompt = `P: Você me ajudará a transformar minhas responsabilidades em conquistas impactantes para o currículo do Career Pulse. Eu era "${jobTitle}" e minha responsabilidade era "${responsibility}".
 
@@ -83,7 +90,7 @@ Sugestão de Conquista Refinada (no estilo Career Pulse):
 };
 
 export const generateSkills = async (jobTitle: string, experience: string): Promise<string[]> => {
-  if (!API_KEY) return ["API Key not configured."];
+  if (!ai) return ["API Key not configured."];
   try {
     const prompt = `Baseado no cargo de "${jobTitle}" e na seguinte experiência: "${experience}", liste 10 habilidades (skills) relevantes, tanto técnicas (hard skills) quanto interpessoais (soft skills). Retorne apenas uma lista separada por vírgulas. Exemplo: React.js, Liderança de Equipe, Gestão de Projetos, Comunicação Eficaz`;
     
