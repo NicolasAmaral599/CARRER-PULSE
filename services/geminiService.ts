@@ -22,17 +22,7 @@ if (isAiAvailable) {
 export const generateSummary = async (input: string): Promise<string> => {
   if (!ai) return "API Key not configured. Please set it up to use AI features.";
   try {
-    const prompt = `P: O cliente do Career Pulse é um ${input}. Crie uma seção "Sobre Mim" para o currículo. Vamos pensar passo a passo, incorporando a energia do Career Pulse.
-
-R:
-IA (Raciocínio):
-Primeiro, identifico as palavras-chave principais e a personalidade do candidato: ${input}.
-Em seguida, começo com uma frase impactante que resuma a experiência e a especialização, alinhada com o dinamismo do Career Pulse.
-Depois, expando sobre as habilidades e paixões, usando verbos de ação e, se possível, quantificadores.
-Finalizo com uma declaração sobre o impacto que o profissional busca, conectando com a ideia de "pulso" e "crescimento".
-Garanto um tom profissional, moderno e persuasivo, digno de um currículo do Career Pulse.
-
-IA (Resposta Final):`;
+    const prompt = `You are an expert resume writer. Write a professional summary for a ${input}. The summary should be vibrant, passionate, and around 3-4 sentences long, highlighting key skills and experience.`;
     
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
@@ -42,7 +32,7 @@ IA (Resposta Final):`;
         topP: 0.95,
       }
     });
-    return response.text.replace("Sobre Mim\n", "").trim();
+    return response.text.trim();
   } catch (error) {
     console.error("Error generating summary:", error);
     return "Failed to generate summary. Please try again.";
@@ -52,28 +42,10 @@ IA (Resposta Final):`;
 export const generateExperienceBullet = async (responsibility: string, jobTitle: string): Promise<string> => {
    if (!ai) return "API Key not configured. Please set it up to use AI features.";
   try {
-    const prompt = `P: Você me ajudará a transformar minhas responsabilidades em conquistas impactantes para o currículo do Career Pulse. Eu era "${jobTitle}" e minha responsabilidade era "${responsibility}".
-
-Primeiro, dê um passo para trás e explique o princípio fundamental de como responsabilidades genéricas podem ser transformadas em conquistas quantificáveis e impactantes. Pense em "como", "o quê", "o quanto" e "o impacto", alinhando-se à visão do Career Pulse de destacar o potencial.
-
-Depois, usando esse princípio, explique como eu poderia refinar a minha responsabilidade de "${responsibility}" em uma conquista de currículo que realmente brilhe no Career Pulse, sugerindo o tipo de informação que eu deveria buscar ou o que eu deveria focar para torná-la poderosa e atraente para recrutadores. Gere apenas a conquista refinada final.
-
-R:
-IA (Abstração - Princípio Fundamental para o Career Pulse):
-No Career Pulse, a chave para transformar responsabilidades em conquistas que realmente "pulsem" é demonstrar ação, resultado e valor. Em vez de apenas listar tarefas, focamos em contar a história do seu impacto. Para isso, considere:
-* A Ação Estratégica (o "como"): Quais foram as suas iniciativas, métodos ou ferramentas específicas que você utilizou?
-* O Resultado Mensurável (o "o quê"): Qual foi o efeito direto e tangível da sua ação? O que mudou ou melhorou?
-* A Quantificação (o "o quanto"): Sempre que possível, inclua números, porcentagens, valores monetários ou prazos.
-* O Impacto no Negócio (o "porquê"): Qual foi a relevância dessa conquista para a empresa?
-
-IA (Aplicação - Refinamento da Conquiça para o Career Pulse):
-Aplicando esses princípios de destaque do Career Pulse à sua responsabilidade "${responsibility}", você pode refiná-la buscando as seguintes informações ou focando em:
-* Ação Estratégica: Que táticas criativas você utilizou?
-* Resultado Quantificável: Em quanto o resultado mudou?
-* Impacto no Negócio: Qual o benefício final para a empresa?
-
-Sugestão de Conquista Refinada (no estilo Career Pulse):
-`;
+    const prompt = `You are an expert resume writer. Convert the following job responsibility into a single, impactful, and quantifiable resume bullet point.
+Job Title: "${jobTitle}"
+Responsibility: "${responsibility}"
+Focus on action, metrics, and results. Do not use quotes in your response. Return only the generated bullet point.`;
     
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
@@ -84,7 +56,7 @@ Sugestão de Conquista Refinada (no estilo Career Pulse):
       }
     });
 
-    return response.text.replace(/"/g, '').trim();
+    return response.text.trim();
   } catch (error) {
     console.error("Error generating experience bullet:", error);
     return "Failed to generate suggestion. Please try again.";
@@ -94,7 +66,7 @@ Sugestão de Conquista Refinada (no estilo Career Pulse):
 export const generateSkills = async (jobTitle: string, experience: string): Promise<string[]> => {
   if (!ai) return ["API Key not configured."];
   try {
-    const prompt = `Baseado no cargo de "${jobTitle}" e na seguinte experiência: "${experience}", liste 10 habilidades (skills) relevantes, tanto técnicas (hard skills) quanto interpessoais (soft skills). Retorne apenas uma lista separada por vírgulas. Exemplo: React.js, Liderança de Equipe, Gestão de Projetos, Comunicação Eficaz`;
+    const prompt = `Based on the job title "${jobTitle}" and the experience "${experience}", suggest 10 relevant hard and soft skills. Return them as a single comma-separated list. For example: "React.js, Team Leadership, Project Management, Effective Communication"`;
     
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
