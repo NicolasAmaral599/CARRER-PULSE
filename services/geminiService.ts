@@ -4,11 +4,13 @@ import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 // Assume API_KEY is set in the environment
 const API_KEY = process.env.API_KEY;
 
+export const isAiAvailable = !!API_KEY;
+
 let ai: GoogleGenAI | null = null;
 
-if (API_KEY) {
+if (isAiAvailable) {
   try {
-    ai = new GoogleGenAI({ apiKey: API_KEY });
+    ai = new GoogleGenAI({ apiKey: API_KEY as string });
   } catch (error) {
     console.error("Failed to initialize GoogleGenAI:", error);
   }

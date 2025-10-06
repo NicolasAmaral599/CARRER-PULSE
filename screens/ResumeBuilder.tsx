@@ -1,9 +1,11 @@
+
 import React, { useState } from 'react';
 import { useResume } from '../hooks/useResume';
 import { AiPromptType } from '../types';
 import ResumePreview from '../components/ResumePreview';
 import AiAssistantModal from '../components/AiAssistantModal';
 import { SparklesIcon, PlusIcon, TrashIcon } from '../components/icons';
+import { isAiAvailable } from '../services/geminiService';
 
 const ResumeBuilder: React.FC = () => {
   const { 
@@ -76,7 +78,11 @@ const ResumeBuilder: React.FC = () => {
             <div className="mb-6">
                 <div className="flex justify-between items-center mb-3">
                     <h3 className="text-xl font-semibold text-text-primary">Professional Summary</h3>
-                     <button onClick={() => openAiModal(AiPromptType.SUMMARY)} className="flex items-center gap-1 text-sm text-primary font-semibold hover:text-purple-800">
+                     <button 
+                        onClick={() => openAiModal(AiPromptType.SUMMARY)} 
+                        disabled={!isAiAvailable}
+                        title={!isAiAvailable ? "API Key not configured. AI features are unavailable." : "Generate summary with AI"}
+                        className="flex items-center gap-1 text-sm text-primary font-semibold hover:text-purple-800 disabled:opacity-50 disabled:cursor-not-allowed">
                         <SparklesIcon className="w-4 h-4" /> Generate with AI
                     </button>
                 </div>
@@ -87,7 +93,11 @@ const ResumeBuilder: React.FC = () => {
             <div className="mb-6">
                  <div className="flex justify-between items-center mb-3">
                     <h3 className="text-xl font-semibold text-text-primary">Skills</h3>
-                     <button onClick={() => openAiModal(AiPromptType.SKILLS, { jobTitle: resume.personalInfo.title, experience: resume.experience.map(e => e.description.join(' ')).join(' ') })} className="flex items-center gap-1 text-sm text-primary font-semibold hover:text-purple-800">
+                     <button 
+                        onClick={() => openAiModal(AiPromptType.SKILLS, { jobTitle: resume.personalInfo.title, experience: resume.experience.map(e => e.description.join(' ')).join(' ') })}
+                        disabled={!isAiAvailable}
+                        title={!isAiAvailable ? "API Key not configured. AI features are unavailable." : "Suggest skills with AI"}
+                        className="flex items-center gap-1 text-sm text-primary font-semibold hover:text-purple-800 disabled:opacity-50 disabled:cursor-not-allowed">
                         <SparklesIcon className="w-4 h-4" /> Suggest Skills
                     </button>
                 </div>
@@ -116,7 +126,11 @@ const ResumeBuilder: React.FC = () => {
                             <input name="endDate" value={exp.endDate} onChange={e => handleExperienceChange(expIndex, e)} placeholder="End Date" className="p-2 border rounded"/>
                         </div>
                          <div className="flex justify-end mb-2">
-                            <button onClick={() => openAiModal(AiPromptType.EXPERIENCE, { expIndex, jobTitle: exp.jobTitle })} className="flex items-center gap-1 text-sm text-primary font-semibold hover:text-purple-800">
+                            <button 
+                                onClick={() => openAiModal(AiPromptType.EXPERIENCE, { expIndex, jobTitle: exp.jobTitle })} 
+                                disabled={!isAiAvailable}
+                                title={!isAiAvailable ? "API Key not configured. AI features are unavailable." : "Enhance responsibility with AI"}
+                                className="flex items-center gap-1 text-sm text-primary font-semibold hover:text-purple-800 disabled:opacity-50 disabled:cursor-not-allowed">
                                 <SparklesIcon className="w-4 h-4" /> Enhance a responsibility
                             </button>
                         </div>
